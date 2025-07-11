@@ -295,12 +295,11 @@ bool asst::BattleHelper::update_deployment(bool init, const cv::Mat& reusable, b
         update_kills(image);
     }
 
-    std::string totalDeployment = "total=";
+    json::object value;
     for (size_t i = 0; i < this->m_cur_deployment_opers.size(); i++) {
-        totalDeployment += this->m_cur_deployment_opers.at(i).name + ",";
+        value["deployment"].emplace(this->m_cur_deployment_opers.at(i).name);
     }
-    totalDeployment.pop_back();
-    notify_action(totalDeployment, "asst::BattleHelper::update_deployment");
+    notify_action(value, "asst::BattleHelper::update_deployment");
 
     return check_in_battle(image);
 }
@@ -353,7 +352,7 @@ bool asst::BattleHelper::update_kills(const cv::Mat& image, const cv::Mat& image
         std::tie(m_kills, m_total_kills) = result_opt->kills.value;
     }
 
-    notify_action(std::format("killed={};total_kills={}", m_kills, m_total_kills), "asst::BattleHelper::update_kills");
+    notify_action({ { "killed", m_kills }, { "total_kills", m_total_kills } }, "asst::BattleHelper::update_kills");
     return true;
 }
 
@@ -370,7 +369,7 @@ bool asst::BattleHelper::update_cost(const cv::Mat& image, const cv::Mat& image_
         m_cost = result_opt->costs.value;
     }
     
-    notify_action(std::format("cost={}", m_cost), "asst::BattleHelper::update_cost");
+    notify_action({ { "cost", m_cost } }, "asst::BattleHelper::update_cost");
     return true;
 }
 
@@ -472,7 +471,7 @@ bool asst::BattleHelper::deploy_oper(const std::string& name, const Point& loc, 
     m_last_use_skill_time.emplace(loc, std::chrono::steady_clock::time_point());
     m_inst_helper.sleep(200); // 部署完会有 166 ms 的动画
 
-    notify_action(std::format("name={}", name), "asst::BattleHelper::deploy_oper");
+    notify_action({ { "name", name } }, "asst::BattleHelper::deploy_oper");
     return true;
 }
 
@@ -492,7 +491,7 @@ bool asst::BattleHelper::retreat_oper(const std::string& name)
 
     m_battlefield_opers.erase(name);
 
-    notify_action(std::format("name={}", name), "asst::BattleHelper::retreat_oper");
+    notify_action({ { "name", name } }, "asst::BattleHelper::retreat_oper");
     return true;
 }
 
@@ -536,7 +535,7 @@ bool asst::BattleHelper::is_skill_ready(const std::string& name, const cv::Mat& 
         return false;
     }
     bool ready = is_skill_ready(oper_iter->second, reusable);
-    notify_action(std::format("name={};ret={}", name, ready), "asst::BattleHelper::is_skill_ready");
+    notify_action({ { "name", name }, { "ret", ready } }, "asst::BattleHelper::is_skill_ready");
     return ready;
 }
 
@@ -550,7 +549,7 @@ bool asst::BattleHelper::use_skill(const std::string& name, bool keep_waiting)
         return false;
     }
     bool useSkill = use_skill(oper_iter->second, keep_waiting);
-    notify_action(std::format("name={};ret={}", name, useSkill), "asst::BattleHelper::use_skill");
+    notify_action({ { "name", name }, { "ret", useSkill } }, "asst::BattleHelper::use_skill");
     return useSkill;
 }
 
@@ -1060,20 +1059,14 @@ void asst::BattleHelper::remove_cooling_from_battlefield(const battle::Deploymen
     m_battlefield_opers.erase(iter);
 }
 
-void  asst::BattleHelper::notify_action(const std::string &str, const std::string &actionStr)
+void  asst::BattleHelper::notify_action(const json::object &value, const std::string &where)
 {
-    json::value info = json::object {
-            { "taskchain", "CopilotEx" },
-            { "taskid", 0 },
-            { "class", "asst::BattleHelper" },
-            { "subtask", "asst::BattleHelper::notify_action" },
-            { "details", json::object() }
-        };
-    info["what"] = "CopilotActionEx";
-    info["details"] |= json::object {
-        { "action", actionStr }, 
-        { "str", str }
+    json::value info = json::object { 
+        { "taskchain", "CopilotExtraInfo" },
+        { "class", where },
+        { "taskid", 0 },
     };
+    info["details"] |= value;
 
     m_asst_callback(AsstMsg::SubTaskExtraInfo, info, m_inst_helper.inst());
 }

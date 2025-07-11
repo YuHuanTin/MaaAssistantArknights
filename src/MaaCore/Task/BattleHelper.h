@@ -133,6 +133,6 @@ private:
 
     AsstCallback m_asst_callback = nullptr;
 
-    void notify_action(const std::string & str, const std::string & actionStr);
+    void notify_action(const json::object& value, const std::string& where);
 };
 } // namespace asst
