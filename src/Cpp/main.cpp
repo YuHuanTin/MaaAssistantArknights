@@ -5,6 +5,41 @@
 #include <stdio.h>
 #include <string>
 #include <thread>
+#include <print>
+
+// 2025年7月11日获取
+enum AsstMsg : int32_t
+{
+    /* Global Info */
+    InternalError     = 0,           // 内部错误
+    InitFailed        = 1,           // 初始化失败
+    ConnectionInfo    = 2,           // 连接相关信息
+    AllTasksCompleted = 3,           // 全部任务完成
+    AsyncCallInfo     = 4,           // 外部异步调用信息
+    Destroyed         = 5,           // 实例已销毁
+
+    /* TaskChain Info */
+    TaskChainError     = 10000,      // 任务链执行/识别错误
+    TaskChainStart     = 10001,      // 任务链开始
+    TaskChainCompleted = 10002,      // 任务链完成
+    TaskChainExtraInfo = 10003,      // 任务链额外信息
+    TaskChainStopped   = 10004,      // 任务链手动停止
+
+    /* SubTask Info */
+    SubTaskError      = 20000,       // 原子任务执行/识别错误
+    SubTaskStart      = 20001,       // 原子任务开始
+    SubTaskCompleted  = 20002,       // 原子任务完成
+    SubTaskExtraInfo  = 20003,       // 原子任务额外信息
+    SubTaskStopped    = 20004,       // 原子任务手动停止
+};
+
+void ASST_CALL idk(AsstMsgId msg, const char* details_json, void* custom_arg) {
+    std::string strDetails = details_json;
+    if (msg == AsstMsg::ConnectionInfo && strDetails.find("ScreencapCost") != std::string::npos) {
+        return;
+    }
+    std::println("\nidk: {}, {}", msg, details_json);
+}
 
 int main([[maybe_unused]] int argc, char** argv)
 {
@@ -38,7 +73,7 @@ int main([[maybe_unused]] int argc, char** argv)
     }
 #endif
 
-    auto ptr = AsstCreate();
+    auto ptr = AsstCreateEx(idk, nullptr);
     if (ptr == nullptr) {
         std::cerr << "create failed" << std::endl;
         return -1;
@@ -51,9 +86,12 @@ int main([[maybe_unused]] int argc, char** argv)
 
 #ifndef ASST_DEBUG
     AsstAsyncConnect(ptr, "adb", "127.0.0.1:5555", nullptr, true);
+    
 #else
-    AsstAsyncConnect(ptr, "adb", "127.0.0.1:5555", "DEBUG", true);
+    // always success if pass "DEBUG"
+    // AsstAsyncConnect(ptr, "D:\\Program Files\\Netease\\MuMu\\nx_main\\adb.exe", "127.0.0.1:16384", "DEBUG", true);
 #endif
+    AsstAsyncConnect(ptr, "\"D:\\Program Files\\Netease\\MuMu\\nx_main\\adb.exe\"", "127.0.0.1:5555", nullptr, true);
     if (!AsstConnected(ptr)) {
         std::cerr << "connect failed" << std::endl;
         AsstDestroy(ptr);
@@ -61,11 +99,12 @@ int main([[maybe_unused]] int argc, char** argv)
 
         return -1;
     }
+    std::println("connect success");
 
 #ifndef ASST_DEBUG
 
     /* 详细参数可参考 docs / 集成文档.md */
-    AsstAppendTask(ptr, "StartUp", nullptr);
+    /*AsstAppendTask(ptr, "StartUp", nullptr);
 
     AsstAppendTask(ptr, "Fight", R"(
     {
@@ -120,14 +159,18 @@ int main([[maybe_unused]] int argc, char** argv)
         "roles": "稳扎稳打",
         "core_char": "维什戴尔"
     }
-    )");
+    )");*/
 
 #else
-
-    AsstAppendTask(ptr, "Debug", nullptr);
-
+    // AsstAppendTask(ptr, "Debug", nullptr);
 #endif
-
+    AsstAppendTask(ptr, "Copilot", R"(
+    {
+        "enable": true,
+        "filename": "D:\\MaaAssistantArknights\\x64\\RelWithDebInfo\\resource\\copilot\\OF-1_credit_fight.json"
+    }
+    )");
+    AsstAsyncScreencap(ptr, true);
     AsstStart(ptr);
 
     while (AsstRunning(ptr)) {

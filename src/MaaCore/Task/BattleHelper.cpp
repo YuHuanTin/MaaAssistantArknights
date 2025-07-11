@@ -24,8 +24,8 @@
 
 using namespace asst::battle;
 
-asst::BattleHelper::BattleHelper(Assistant* inst) :
-    m_inst_helper(inst)
+asst::BattleHelper::BattleHelper(const AsstCallback &callback, Assistant* inst) :
+    m_inst_helper(inst), m_asst_callback(callback)
 {
 }
 
@@ -295,6 +295,13 @@ bool asst::BattleHelper::update_deployment(bool init, const cv::Mat& reusable, b
         update_kills(image);
     }
 
+    std::string totalDeployment = "total=";
+    for (size_t i = 0; i < this->m_cur_deployment_opers.size(); i++) {
+        totalDeployment += this->m_cur_deployment_opers.at(i).name + ",";
+    }
+    totalDeployment.pop_back();
+    notify_action(totalDeployment, "asst::BattleHelper::update_deployment");
+
     return check_in_battle(image);
 }
 
@@ -345,6 +352,8 @@ bool asst::BattleHelper::update_kills(const cv::Mat& image, const cv::Mat& image
     if (result_opt->kills.status == BattlefieldMatcher::MatchStatus::Success) {
         std::tie(m_kills, m_total_kills) = result_opt->kills.value;
     }
+
+    notify_action(std::format("killed={};total_kills={}", m_kills, m_total_kills), "asst::BattleHelper::update_kills");
     return true;
 }
 
@@ -360,6 +369,8 @@ bool asst::BattleHelper::update_cost(const cv::Mat& image, const cv::Mat& image_
     else if (result_opt->costs.status == BattlefieldMatcher::MatchStatus::Success) {
         m_cost = result_opt->costs.value;
     }
+    
+    notify_action(std::format("cost={}", m_cost), "asst::BattleHelper::update_cost");
     return true;
 }
 
@@ -461,6 +472,7 @@ bool asst::BattleHelper::deploy_oper(const std::string& name, const Point& loc, 
     m_last_use_skill_time.emplace(loc, std::chrono::steady_clock::time_point());
     m_inst_helper.sleep(200); // 部署完会有 166 ms 的动画
 
+    notify_action(std::format("name={}", name), "asst::BattleHelper::deploy_oper");
     return true;
 }
 
@@ -479,6 +491,8 @@ bool asst::BattleHelper::retreat_oper(const std::string& name)
     }
 
     m_battlefield_opers.erase(name);
+
+    notify_action(std::format("name={}", name), "asst::BattleHelper::retreat_oper");
     return true;
 }
 
@@ -521,7 +535,9 @@ bool asst::BattleHelper::is_skill_ready(const std::string& name, const cv::Mat& 
         Log.error("No oper", name);
         return false;
     }
-    return is_skill_ready(oper_iter->second, reusable);
+    bool ready = is_skill_ready(oper_iter->second, reusable);
+    notify_action(std::format("name={};ret={}", name, ready), "asst::BattleHelper::is_skill_ready");
+    return ready;
 }
 
 bool asst::BattleHelper::use_skill(const std::string& name, bool keep_waiting)
@@ -533,8 +549,9 @@ bool asst::BattleHelper::use_skill(const std::string& name, bool keep_waiting)
         Log.error("No oper", name);
         return false;
     }
-
-    return use_skill(oper_iter->second, keep_waiting);
+    bool useSkill = use_skill(oper_iter->second, keep_waiting);
+    notify_action(std::format("name={};ret={}", name, useSkill), "asst::BattleHelper::use_skill");
+    return useSkill;
 }
 
 bool asst::BattleHelper::use_skill(const Point& loc, bool keep_waiting)
@@ -1041,4 +1058,22 @@ void asst::BattleHelper::remove_cooling_from_battlefield(const battle::Deploymen
     auto loc = iter->second;
     m_used_tiles.erase(loc);
     m_battlefield_opers.erase(iter);
+}
+
+void  asst::BattleHelper::notify_action(const std::string &str, const std::string &actionStr)
+{
+    json::value info = json::object {
+            { "taskchain", "CopilotEx" },
+            { "taskid", 0 },
+            { "class", "asst::BattleHelper" },
+            { "subtask", "asst::BattleHelper::notify_action" },
+            { "details", json::object() }
+        };
+    info["what"] = "CopilotActionEx";
+    info["details"] |= json::object {
+        { "action", actionStr }, 
+        { "str", str }
+    };
+
+    m_asst_callback(AsstMsg::SubTaskExtraInfo, info, m_inst_helper.inst());
 }

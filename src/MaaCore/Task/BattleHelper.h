@@ -30,7 +30,7 @@ public:
     ~BattleHelper() = default;
 
 protected:
-    BattleHelper(Assistant* inst);
+    BattleHelper(const AsstCallback &callback, Assistant* inst);
 
     virtual AbstractTask& this_task() = 0;
 
@@ -130,5 +130,9 @@ protected:
 
 private:
     InstHelper m_inst_helper;
+
+    AsstCallback m_asst_callback = nullptr;
+
+    void notify_action(const std::string & str, const std::string & actionStr);
 };
 } // namespace asst

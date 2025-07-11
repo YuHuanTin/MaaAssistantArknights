@@ -26,7 +26,7 @@ using namespace asst::battle::copilot;
 
 asst::BattleProcessTask::BattleProcessTask(const AsstCallback& callback, Assistant* inst, std::string_view task_chain) :
     AbstractTask(callback, inst, task_chain),
-    BattleHelper(inst)
+    BattleHelper(callback, inst)
 {
 }
 
