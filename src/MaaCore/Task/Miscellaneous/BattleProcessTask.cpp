@@ -20,6 +20,7 @@
 #include "Vision/Battle/BattlefieldMatcher.h"
 #include "Vision/Matcher.h"
 #include "Vision/RegionOCRer.h"
+#include <Vision/Miscellaneous/StageDropsImageAnalyzer.h>
 
 using namespace asst::battle;
 using namespace asst::battle::copilot;
@@ -57,6 +58,40 @@ bool asst::BattleProcessTask::_run()
         wait_until_end();
     }
 
+
+    sleep(2000);
+    int maxTry = 5;
+    for (int i = 0; i < maxTry; i++) {
+        StageDropsImageAnalyzer analyzer(ctrler()->get_image());
+        // 很大概率失败（提示找不到 baseline？？？）
+        if (analyzer.analyze()) {
+            auto&& [code, difficulty] = analyzer.get_stage_key();
+
+            std::string stage_code = std::move(code);
+            ranges::transform(stage_code, stage_code.begin(), [](char ch) -> char {
+                return static_cast<char>(::toupper(ch));
+            });
+
+            Log.info(__FUNCTION__, "Stage Code:", stage_code, "Stars:", analyzer.get_stars());
+            break;
+        }
+        else {
+            // 几星完成作战？
+            int star = analyzer.get_stars();
+            auto&& [code, difficulty] = analyzer.get_stage_key();
+
+            // WARN! (依赖 analyzer 初始 0)
+            if (star != 0) {/*
+                m_callback(asst::AsstMsg::SubTaskExtraInfo, { {} })*/
+
+                this->notify_callback(
+                    { { "star", star }, { "difficulty", difficulty } },
+                    "asst::BattleProcessTask::_run");
+                break;
+            }
+        }
+        sleep(2000);
+    }
     return true;
 }
 

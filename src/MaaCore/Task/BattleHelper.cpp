@@ -308,7 +308,7 @@ bool asst::BattleHelper::update_deployment(bool init, const cv::Mat& reusable, b
     //    value["cost"] = oper_result_opt->costs.value;
     //}
 
-    notify_action(value, "asst::BattleHelper::update_deployment");
+    notify_callback(value, "asst::BattleHelper::update_deployment");
 
     return check_in_battle(image);
 }
@@ -361,7 +361,7 @@ bool asst::BattleHelper::update_kills(const cv::Mat& image, const cv::Mat& image
         std::tie(m_kills, m_total_kills) = result_opt->kills.value;
     }
 
-    notify_action({ { "killed", m_kills }, { "total_kills", m_total_kills } }, "asst::BattleHelper::update_kills");
+    notify_callback({ { "killed", m_kills }, { "total_kills", m_total_kills } }, "asst::BattleHelper::update_kills");
     return true;
 }
 
@@ -378,7 +378,7 @@ bool asst::BattleHelper::update_cost(const cv::Mat& image, const cv::Mat& image_
         m_cost = result_opt->costs.value;
     }
     
-    notify_action({ { "cost", m_cost } }, "asst::BattleHelper::update_cost");
+    notify_callback({ { "cost", m_cost } }, "asst::BattleHelper::update_cost");
     return true;
 }
 
@@ -480,7 +480,7 @@ bool asst::BattleHelper::deploy_oper(const std::string& name, const Point& loc, 
     m_last_use_skill_time.emplace(loc, std::chrono::steady_clock::time_point());
     m_inst_helper.sleep(200); // 部署完会有 166 ms 的动画
 
-    notify_action({ { "name", name } }, "asst::BattleHelper::deploy_oper");
+    notify_callback({ { "name", name } }, "asst::BattleHelper::deploy_oper");
     return true;
 }
 
@@ -500,7 +500,7 @@ bool asst::BattleHelper::retreat_oper(const std::string& name)
 
     m_battlefield_opers.erase(name);
 
-    notify_action({ { "name", name } }, "asst::BattleHelper::retreat_oper");
+    notify_callback({ { "name", name } }, "asst::BattleHelper::retreat_oper");
     return true;
 }
 
@@ -544,7 +544,7 @@ bool asst::BattleHelper::is_skill_ready(const std::string& name, const cv::Mat& 
         return false;
     }
     bool ready = is_skill_ready(oper_iter->second, reusable);
-    notify_action({ { "name", name }, { "ret", ready } }, "asst::BattleHelper::is_skill_ready");
+    notify_callback({ { "name", name }, { "ret", ready } }, "asst::BattleHelper::is_skill_ready");
     return ready;
 }
 
@@ -558,7 +558,7 @@ bool asst::BattleHelper::use_skill(const std::string& name, bool keep_waiting)
         return false;
     }
     bool useSkill = use_skill(oper_iter->second, keep_waiting);
-    notify_action({ { "name", name }, { "ret", useSkill } }, "asst::BattleHelper::use_skill");
+    notify_callback({ { "name", name }, { "ret", useSkill } }, "asst::BattleHelper::use_skill");
     return useSkill;
 }
 
@@ -643,6 +643,7 @@ bool asst::BattleHelper::wait_until_end(bool weak)
 
     cv::Mat image = m_inst_helper.ctrler()->get_image();
     while (!m_inst_helper.need_exit() && check_in_battle(image, weak)) {
+        update_deployment();
         do_strategic_action(image);
         std::this_thread::yield();
 
@@ -677,7 +678,7 @@ bool asst::BattleHelper::use_all_ready_skill(const cv::Mat& reusable)
         }
 
         Log.info("Skill", name, "is ready");
-        notify_action({ { "name", name } }, "asst::BattleHelper::use_all_ready_skill");
+        notify_callback({ { "name", name } }, "asst::BattleHelper::use_all_ready_skill");
 
         if (usage != SkillUsage::Possibly && usage != SkillUsage::Times) {
             continue;
@@ -701,7 +702,7 @@ bool asst::BattleHelper::use_all_ready_skill(const cv::Mat& reusable)
             }
             continue;
         }
-        notify_action({ { "name", name }, { "used", true } }, "asst::BattleHelper::use_all_ready_skill");
+        notify_callback({ { "name", name }, { "used", true } }, "asst::BattleHelper::use_all_ready_skill");
         used = true;
         retry = 0;
         m_last_use_skill_time[name] = now;
@@ -1072,7 +1073,7 @@ void asst::BattleHelper::remove_cooling_from_battlefield(const battle::Deploymen
     m_battlefield_opers.erase(iter);
 }
 
-void  asst::BattleHelper::notify_action(const json::object &value, const std::string &where)
+void asst::BattleHelper::notify_callback(const json::object& value, const std::string& where)
 {
     json::value info = json::object { 
         { "taskchain", "CopilotExtraInfo" },
