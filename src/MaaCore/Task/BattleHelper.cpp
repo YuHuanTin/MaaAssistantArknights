@@ -239,12 +239,14 @@ bool asst::BattleHelper::update_deployment(bool init, const cv::Mat& reusable, b
     BattlefieldMatcher oper_analyzer(image);
 
     // 保全要识别开局费用，先用init判断了，之后别的地方要用的话再做cache
-    if (init || need_oper_cost) {
+    /*if (init || need_oper_cost) {
         oper_analyzer.set_object_of_interest({ .deployment = true, .oper_cost = true });
     }
     else {
         oper_analyzer.set_object_of_interest({ .deployment = true });
-    }
+    }*/
+    // 需要识别携带干员与击杀数
+    oper_analyzer.set_object_of_interest({ .deployment = true, .kills = true });
     auto oper_result_opt = oper_analyzer.analyze();
     if (!oper_result_opt) {
         check_in_battle(image);
@@ -299,6 +301,13 @@ bool asst::BattleHelper::update_deployment(bool init, const cv::Mat& reusable, b
     for (size_t i = 0; i < this->m_cur_deployment_opers.size(); i++) {
         value["deployment"].emplace(this->m_cur_deployment_opers.at(i).name);
     }
+    if (oper_result_opt->kills.status != BattlefieldMatcher::MatchStatus::Invalid) {
+        value["kills"] = oper_result_opt->kills.value;
+    }
+    //if (oper_result_opt->costs.status != BattlefieldMatcher::MatchStatus::Invalid) {
+    //    value["cost"] = oper_result_opt->costs.value;
+    //}
+
     notify_action(value, "asst::BattleHelper::update_deployment");
 
     return check_in_battle(image);
@@ -661,15 +670,18 @@ bool asst::BattleHelper::use_all_ready_skill(const cv::Mat& reusable)
         auto& retry = m_skill_error_count[name];
         auto& times = m_skill_times[name];
         auto& last_use_time = m_last_use_skill_time[name];
-        if (usage != SkillUsage::Possibly && usage != SkillUsage::Times) {
-            continue;
-        }
 
+        // 只要是有干员技能准备好了就触发回调
         if (!is_skill_ready(loc, image)) {
             continue;
         }
 
         Log.info("Skill", name, "is ready");
+        notify_action({ { "name", name } }, "asst::BattleHelper::use_all_ready_skill");
+
+        if (usage != SkillUsage::Possibly && usage != SkillUsage::Times) {
+            continue;
+        }
 
         if (auto interval = now - last_use_time; min_frame_interval > interval) {
             Log.info(
@@ -689,6 +701,7 @@ bool asst::BattleHelper::use_all_ready_skill(const cv::Mat& reusable)
             }
             continue;
         }
+        notify_action({ { "name", name }, { "used", true } }, "asst::BattleHelper::use_all_ready_skill");
         used = true;
         retry = 0;
         m_last_use_skill_time[name] = now;
