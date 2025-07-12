@@ -24,19 +24,19 @@ asst::CopilotTask::CopilotTask(const AsstCallback& callback, Assistant* inst) :
 {
     LogTraceFunction;
 
-    m_subtasks.emplace_back(m_task_file_reload_task_ptr);
-    m_subtasks.emplace_back(m_navigate_task_ptr);
+    //m_subtasks.emplace_back(m_task_file_reload_task_ptr);
+    //m_subtasks.emplace_back(m_navigate_task_ptr);
 
-    m_not_use_prts_task_ptr->set_tasks({ "NotUsePrts" }).set_ignore_error(true).set_retry_times(0);
-    m_subtasks.emplace_back(m_not_use_prts_task_ptr);
+    //m_not_use_prts_task_ptr->set_tasks({ "NotUsePrts" }).set_ignore_error(true).set_retry_times(0);
+    //m_subtasks.emplace_back(m_not_use_prts_task_ptr);
 
-    // 选择突袭模式
-    m_change_difficulty_task_ptr->set_tasks({ "RaidConfirm", "ChangeToRaidDifficulty" });
-    m_subtasks.emplace_back(m_change_difficulty_task_ptr);
+    //// 选择突袭模式
+    //m_change_difficulty_task_ptr->set_tasks({ "RaidConfirm", "ChangeToRaidDifficulty" });
+    //m_subtasks.emplace_back(m_change_difficulty_task_ptr);
 
-    auto start_1_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
-    start_1_tp->set_tasks({ "BattleStartPre" }).set_retry_times(3).set_ignore_error(true);
-    m_subtasks.emplace_back(start_1_tp);
+    //auto start_1_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
+    //start_1_tp->set_tasks({ "BattleStartPre" }).set_retry_times(3).set_ignore_error(true);
+    //m_subtasks.emplace_back(start_1_tp);
 
     m_medicine_task_ptr = std::make_shared<ProcessTask>(callback, inst, TaskType);
     m_medicine_task_ptr->set_tasks({ "BattleStartPre@UseMedicine", "BattleStartPre@BattleQuickFormation" })
@@ -44,16 +44,16 @@ asst::CopilotTask::CopilotTask(const AsstCallback& callback, Assistant* inst) :
     m_medicine_task_ptr->register_plugin<MedicineCounterTaskPlugin>()->set_count(999999);
     m_subtasks.emplace_back(m_medicine_task_ptr);
 
-    m_subtasks.emplace_back(m_formation_task_ptr)->set_retry_times(0);
+    //m_subtasks.emplace_back(m_formation_task_ptr)->set_retry_times(0);
 
-    auto start_2_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
-    start_2_tp->set_tasks({ "BattleStartAll" }).set_retry_times(3).set_ignore_error(false);
-    m_subtasks.emplace_back(start_2_tp);
+    //auto start_2_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
+    //start_2_tp->set_tasks({ "BattleStartAll" }).set_retry_times(3).set_ignore_error(false);
+    //m_subtasks.emplace_back(start_2_tp);
 
-    // 跳过“以下干员出战后将被禁用，是否继续？”对话框
-    auto start_3_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
-    start_3_tp->set_tasks({ "SkipForbiddenOperConfirm", "Stop" }).set_ignore_error(false);
-    m_subtasks.emplace_back(start_3_tp);
+    //// 跳过“以下干员出战后将被禁用，是否继续？”对话框
+    //auto start_3_tp = std::make_shared<ProcessTask>(callback, inst, TaskType);
+    //start_3_tp->set_tasks({ "SkipForbiddenOperConfirm", "Stop" }).set_ignore_error(false);
+    //m_subtasks.emplace_back(start_3_tp);
 
     m_subtasks.emplace_back(m_battle_task_ptr)->set_retry_times(0);
 

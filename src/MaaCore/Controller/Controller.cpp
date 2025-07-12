@@ -164,13 +164,23 @@ bool asst::Controller::stop_game(const std::string& client_type)
 bool asst::Controller::click(const Point& p)
 {
     CHECK_EXIST(m_controller, false);
-    return m_scale_proxy->click(p);
+
+    // WARN!
+    // disable click
+    p;
+    return true;
+    //return m_scale_proxy->click(p);
 }
 
 bool asst::Controller::click(const Rect& rect)
 {
     CHECK_EXIST(m_controller, false);
-    return m_scale_proxy->click(rect);
+
+    // WARN!
+    // disable click
+    rect;
+    return true;
+    //return m_scale_proxy->click(rect);
 }
 
 bool asst::Controller::input(const std::string& text)
@@ -189,7 +199,12 @@ bool asst::Controller::swipe(
     bool with_pause)
 {
     CHECK_EXIST(m_controller, false);
-    return m_scale_proxy->swipe(p1, p2, duration, extra_swipe, slope_in, slope_out, with_pause);
+
+    // WARN!
+    // disable click
+    p1, p2, duration, extra_swipe, slope_in, slope_out, with_pause;
+    return true;
+    //return m_scale_proxy->swipe(p1, p2, duration, extra_swipe, slope_in, slope_out, with_pause);
 }
 
 bool asst::Controller::swipe(
@@ -203,8 +218,14 @@ bool asst::Controller::swipe(
     bool high_resolution_swipe_fix)
 {
     CHECK_EXIST(m_controller, false);
-    return m_scale_proxy
-        ->swipe(r1, r2, duration, extra_swipe, slope_in, slope_out, with_pause, high_resolution_swipe_fix);
+
+    // WARN!
+    // disable click
+
+    r1, r2, duration, extra_swipe, slope_in, slope_out, with_pause, high_resolution_swipe_fix;
+    return true;
+    /*return m_scale_proxy
+        ->swipe(r1, r2, duration, extra_swipe, slope_in, slope_out, with_pause, high_resolution_swipe_fix);*/
 }
 
 bool asst::Controller::inject_input_event(InputEvent& event)

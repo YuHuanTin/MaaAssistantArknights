@@ -164,19 +164,22 @@ int main([[maybe_unused]] int argc, char** argv)
 #else
     // AsstAppendTask(ptr, "Debug", nullptr);
 #endif
-    AsstAppendTask(ptr, "Copilot", R"(
+
+    while (true) {
+        AsstAppendTask(ptr, "Copilot", R"(
     {
         "enable": true,
         "filename": "D:\\MaaAssistantArknights\\x64\\RelWithDebInfo\\resource\\copilot\\OF-1_credit_fight.json"
     }
     )");
-    AsstAsyncScreencap(ptr, true);
-    AsstStart(ptr);
+        AsstAsyncScreencap(ptr, true);
+        AsstStart(ptr);
 
-    while (AsstRunning(ptr)) {
-        std::this_thread::yield();
+        while (AsstRunning(ptr)) {
+            std::this_thread::yield();
+        }
     }
-
+    
     AsstStop(ptr);
     AsstDestroy(ptr);
     ptr = nullptr;

@@ -123,7 +123,8 @@ protected:
     int m_total_kills = 0;
     int m_cost = 0;
 
-    std::vector<battle::DeploymentOper> m_cur_deployment_opers;
+    std::vector<battle::DeploymentOper> m_old_deployment_opers; // 老的携带干员
+    std::vector<battle::DeploymentOper> m_cur_deployment_opers; // 新的携带干员
 
     std::map<std::string, Point> m_battlefield_opers;
     std::map<Point, std::string> m_used_tiles;

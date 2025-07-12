@@ -625,15 +625,16 @@ bool asst::BattleHelper::wait_until_start(bool weak)
     const auto start_time = std::chrono::steady_clock::now();
 
     cv::Mat image = m_inst_helper.ctrler()->get_image();
-    while (!m_inst_helper.need_exit() && !check_in_battle(image, weak)) {
-        if (std::chrono::steady_clock::now() - start_time > timeout_duration) {
-            Log.warn("Timeout reached while waiting to start the battle.");
-            return false;
-        }
+    //while (!m_inst_helper.need_exit() && !check_in_battle(image, weak)) {
+    //    if (std::chrono::steady_clock::now() - start_time > timeout_duration) {
+    //        Log.warn("Timeout reached while waiting to start the battle.");
+    //        return false;
+    //    }
 
-        std::this_thread::yield();
-        image = m_inst_helper.ctrler()->get_image();
-    }
+    //    std::this_thread::yield();
+    //    image = m_inst_helper.ctrler()->get_image();
+    //}
+    weak;
     return true;
 }
 
@@ -642,8 +643,41 @@ bool asst::BattleHelper::wait_until_end(bool weak)
     LogTraceFunction;
 
     cv::Mat image = m_inst_helper.ctrler()->get_image();
+
+    // 初始化
+    update_deployment();
+    m_old_deployment_opers = m_cur_deployment_opers;
+
     while (!m_inst_helper.need_exit() && check_in_battle(image, weak)) {
         update_deployment();
+        if (m_cur_deployment_opers.size() != m_old_deployment_opers.size()) {
+            // 打肉鸽会有bug：可能有重复干员
+
+            // 说明有干员被撤退了？！(这是猜的)
+            if (m_cur_deployment_opers.size() > m_old_deployment_opers.size()) {
+                ranges::for_each(m_cur_deployment_opers, [this](const battle::DeploymentOper& e) {
+                    if (auto it = ranges::find_if(m_old_deployment_opers, [&e](auto& a) { return a.name == e.name; });
+                        it == m_old_deployment_opers.end()) {
+                        notify_callback(
+                            { { "name", e.name } },
+                            "asst::BattleHelper::wait_until_end::retreat_oper_fake");
+                    }
+                });
+            }
+            // 说明有干员被部署了？！(这是猜的)
+            else if (m_cur_deployment_opers.size() < m_old_deployment_opers.size()) {
+                ranges::for_each(m_old_deployment_opers, [this](const battle::DeploymentOper& e) {
+                    if (auto it = ranges::find_if(m_cur_deployment_opers, [&e](auto& a) { return a.name == e.name; });
+                        it == m_cur_deployment_opers.end()) {
+                        notify_callback(
+                            { { "name", e.name } },
+                            "asst::BattleHelper::wait_until_end::deploy_oper");
+                    }
+                });
+            }
+        }
+        m_old_deployment_opers = m_cur_deployment_opers;
+
         do_strategic_action(image);
         std::this_thread::yield();
 
